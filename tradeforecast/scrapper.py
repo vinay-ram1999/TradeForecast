@@ -38,7 +38,8 @@ class Scrapper:
                 data = yf.download(ticker, start=start, end=end, period=period, interval=interval, group_by='ticker')
                 data.to_csv(csv_fpath, index=False)
                 _fnames[ticker] = csv_fname
-            except Exception:
+            except Exception as e:
+                print(e)
                 pass
         return _fnames
     
@@ -48,9 +49,12 @@ class Scrapper:
         if isinstance(self.yf_ticker_obj, yf.Tickers):
             yf_ticker_obj = self.yf_ticker_obj.tickers.values()
         
-        for obj in yf_ticker_obj:
-            data = obj.history(start=start, end=end, period=period, interval=interval)
-            _dfs[obj.ticker] = data
+        try:
+            for obj in yf_ticker_obj:
+                data = obj.history(start=start, end=end, period=period, interval=interval)
+                _dfs[obj.ticker] = data
+        except Exception as e:
+                print(e)
         return _dfs
 
 
