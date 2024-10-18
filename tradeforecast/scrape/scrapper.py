@@ -4,7 +4,7 @@ import pandas as pd
 import datetime as dt
 import os
 
-from .constants import data_dir
+from . import data_dir
 
 class Scrapper:
     def __init__(self, ticker: str | list=None) -> None:
@@ -28,7 +28,7 @@ class Scrapper:
         if not os.path.isdir(data_dir):
             raise NotADirectoryError(f'{data_dir}')
     
-    def export_historic_data(self, interval: str='1h', period: str='max', start=None, end=None) -> dict:
+    def export_historic_data(self, interval: str='1d', period: str='10y', start=None, end=None) -> dict:
         _fnames = {}
         for ticker in self.ticker:
             csv_fname = f'{ticker}_{interval}_{period}_({start}-{end}).csv'
@@ -36,20 +36,19 @@ class Scrapper:
 
             try:
                 data = yf.download(ticker, start=start, end=end, period=period, interval=interval, group_by='ticker')
-                data.to_csv(csv_fpath, index=False)
+                data.to_csv(csv_fpath, index=True)
                 _fnames[ticker] = csv_fname
             except Exception as e:
                 print(e)
                 pass
         return _fnames
     
-    def fetch_historic_data(self, interval: str='1h', period: str='max', start=None, end=None) -> dict:
+    def fetch_historic_data(self, interval: str='1d', period: str='max', start=None, end=None) -> dict:
         _dfs = {}
         yf_ticker_obj = [self.yf_ticker_obj]
-        if isinstance(self.yf_ticker_obj, yf.Tickers):
-            yf_ticker_obj = self.yf_ticker_obj.tickers.values()
-        
         try:
+            if isinstance(self.yf_ticker_obj, yf.Tickers):
+                yf_ticker_obj = self.yf_ticker_obj.tickers.values()
             for obj in yf_ticker_obj:
                 data = obj.history(start=start, end=end, period=period, interval=interval)
                 _dfs[obj.ticker] = data

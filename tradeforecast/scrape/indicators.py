@@ -2,11 +2,12 @@ import polars as pl
 
 import os
 
-from .constants import data_dir
+from . import data_dir
 from .utils import (
-    calculate_sma, calculate_ema, ma_type_func_maping,
+    ma_type_func_maping,
     calculate_macd_sl,
-    calculate_rsi
+    calculate_rsi,
+    calculate_atr
     )
 
 class IndicatorBase:
@@ -17,8 +18,7 @@ class IndicatorBase:
             ma_func = ma_type_func_maping[ma_type]
             lf = ma_func(lf, eval_var, n)
         except AssertionError as e:
-            print(e)
-            print("MA variable is not added to the dataset!")
+            print(e, "\nMA variable is not added to the dataset!")
         return lf
     
     @staticmethod
@@ -29,6 +29,11 @@ class IndicatorBase:
     @staticmethod
     def rsi(lf: pl.LazyFrame, eval_var: str, n: int, ma_type: str) -> pl.LazyFrame:
         lf = calculate_rsi(lf, eval_var, n, ma_type)
+        return lf
+    
+    @staticmethod
+    def atr(lf: pl.LazyFrame, eval_var: str, n: int, ma_type: str) -> pl.LazyFrame:
+        lf = calculate_atr(lf, eval_var, n, ma_type)
         return lf
 
 
@@ -64,5 +69,6 @@ class Indicators(IndicatorBase):
         self.data = self.rsi(self.data, eval_var, n, ma_type)
         return
     
-
-    
+    def add_atr(self, eval_var: str="Close", n: int=14, ma_type: str="EMA") -> None:
+        self.data = self.atr(self.data, eval_var, n, ma_type)
+        return
