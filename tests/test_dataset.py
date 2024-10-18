@@ -1,9 +1,11 @@
-from tradeforecast import Indicators, Scrapper
+from tradeforecast.scrape import Scrapper
+from tradeforecast.augmentation import Indicators, LSTMDataset
 
-tckrs = 'AAPL,NVDA'
+
+tckrs = 'AAPL'
 scrapper = Scrapper(tckrs)
 
-exported_fname = scrapper.export_historic_data()
+exported_fname = scrapper.export_historic_data(period='max')
 
 for key in exported_fname.keys():
 
@@ -14,5 +16,11 @@ for key in exported_fname.keys():
     indicators.add_macd_sl()
     indicators.add_rsi()
     indicators.add_atr()
-    print(indicators.data.drop_nulls().collect())
+    lf = indicators.data.drop_nulls()
+
+    dataset = LSTMDataset(lf, seq_length=10)
+    X, y = dataset[33]
+    print(X.shape,y)
+
+
 

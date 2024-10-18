@@ -2,7 +2,7 @@ import polars as pl
 
 import os
 
-from . import data_dir
+from ..constants import data_dir
 from .utils import (
     ma_type_func_maping,
     calculate_macd_sl,
@@ -13,12 +13,9 @@ from .utils import (
 class IndicatorBase:
     @staticmethod
     def moving_average(lf: pl.LazyFrame, eval_var: str, n: int, ma_type: str) -> pl.LazyFrame:
-        try:
-            assert ma_type in ma_type_func_maping.keys(), f"Currently available ma_types are {list(ma_type_func_maping.keys())}, '{ma_type}' is not available"
-            ma_func = ma_type_func_maping[ma_type]
-            lf = ma_func(lf, eval_var, n)
-        except AssertionError as e:
-            print(e, "\nMA variable is not added to the dataset!")
+        assert ma_type in ma_type_func_maping.keys(), f"Currently available ma_types are {list(ma_type_func_maping.keys())}, '{ma_type}' is not available"
+        ma_func = ma_type_func_maping[ma_type]
+        lf = ma_func(lf, eval_var, n)
         return lf
     
     @staticmethod
@@ -47,11 +44,8 @@ class Indicators(IndicatorBase):
         if hasattr(self, "_data"):
             return self._data
         else:
-            try:
-                self._data = pl.scan_csv(os.path.join(data_dir, self.fpath))
-                return self._data
-            except Exception as e:
-                print(e)
+            self._data = pl.scan_csv(os.path.join(data_dir, self.fpath), try_parse_dates=True)
+            return self._data
 
     @data.setter
     def data(self, lf: pl.LazyFrame):
