@@ -1,5 +1,6 @@
 from tradeforecast.scrape import Scrapper
 from tradeforecast.augmentation import DataEntryPoint, Indicators, FeatureEngg, LSTMDataset
+from sklego.preprocessing import RepeatingBasisFunction
 
 #fpath = 'AAPL_1d_max_(None-None).csv'
 fpath = 'AAPL_1h_max_(None-None).csv'
@@ -23,9 +24,9 @@ features.add_hours()
 #print(data_entry.temporal_vars)
 #print(data_entry.columns())
 
-lf = data_entry.data.drop_nulls()
+lf = data_entry.data
 
-print(lf.collect())
+print(lf.drop(['Datetime','High']).collect())
 #dataset = LSTMDataset(lf, seq_length=10)
 #X, y = dataset[33]
 #print(X.shape,y)

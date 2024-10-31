@@ -1,7 +1,5 @@
 import polars as pl
 
-import math
-
 def calculate_sma(lf: pl.LazyFrame, eval_var: str, n: int, col_name: str=None) -> pl.LazyFrame:
     """Calculate Simple Moving Average (SMA)"""
     col_name = f'SMA_{eval_var.lower()}_{n}' if col_name == None else col_name
