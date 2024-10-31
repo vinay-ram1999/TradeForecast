@@ -1,44 +1,34 @@
 import torch.nn.functional as F
-from torch import nn
+from torch import nn, Tensor
 import torch
 
-from .base import BaseModel
+from .base import RNNBase
 
-class LSTM(BaseModel):
-    def __init__(self, *args, **kwargs):
+class LSTM(RNNBase):
+    def __init__(self, **kwargs):
         """
         LSTM neural network
-        kwargs must include: ['input_size': int, 'hidden_size': int, 'n_LSTM': int,
-                             'output_size': int, 'batch_first': bool, 'dropout': float]
+        kwargs must include: 
         """
+        self.input_size: int = kwargs.get('input_size')
+        self.hidden_size: int = kwargs.get('hidden_size')
+        self.n_LSTM: int = kwargs.get('n_LSTM')
+        self.fc_out_size: list = kwargs.get('fc_out_size')
+        self.output_size: int = kwargs.get('output_size')
+        self.dropout: float = kwargs.get('dropout')
+        self.n_fc: int = len(self.fc_out_size) + 1    # self.n_fc --> number of fully connected layers + output_layer
+        self.fc_out_size.insert(0, self.hidden_size)
+        self.fc_out_size.append(self.output_size)
         super().__init__()
-        if kwargs:
-            for arg in kwargs.keys():
-                setattr(self, arg, kwargs[arg])
-        self.lstm_net = nn.LSTM(input_size=self.input_size, hidden_size=self.hidden_size, num_layers=self.n_LSTM, batch_first=self.batch_first, dropout=self.dropout)
-        self.linear_net = nn.Sequential()
-        self.linear_net.add_module('Linear_0', nn.Linear(in_features=self.hidden_size, out_features=128))
-        self.linear_net.add_module('Linear_1', nn.Linear(in_features=128, out_features=self.output_size))
+        self.device = torch.device(self.get_device_type())
+        print(f"The device is set to --- '{self.device}'")
+        self.lstm = nn.LSTM(input_size=self.input_size, hidden_size=self.hidden_size, num_layers=self.n_LSTM, batch_first=True, dropout=self.dropout, device=self.device)
+        self.fc_linear = nn.Sequential()
+        for i in range(self.n_fc):
+            self.fc_linear.add_module(f"Linear_{i+1}", nn.Linear(in_features=self.fc_out_size[i], out_features=self.fc_out_size[i+1], device=self.device))
         pass
 
-    def forward(self, x: torch.Tensor, forecast: int):
-
+    def forward(self, x: Tensor):
         pass
-
-    def train_model(self):
-        self.train()
-        return
-    
-    @torch.inference_mode
-    def test_model(self):
-        #assert torch.is_inference_mode_enabled(), "torch is not in inference_mode!"
-        print(self.input_size)
-        self.eval()
-        return
-    
-    @torch.inference_mode
-    def predict(self):
-        #assert torch.is_inference_mode_enabled(), "torch is not in inference_mode!"
-        return
 
 
