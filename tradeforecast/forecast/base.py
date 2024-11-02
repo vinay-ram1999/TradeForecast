@@ -20,7 +20,6 @@ class RNNBase(BaseModel):
                     n_epochs: int,
                     data_loader: DataLoader,
                     learning_rate: float=0.001):
-        self.train()
         criterion = criterion()
         optimizer = optimizer(**{'params':self.parameters(),'lr':learning_rate})
         hidden_size = getattr(self, 'hidden_size')

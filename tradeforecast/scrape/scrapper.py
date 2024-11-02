@@ -27,14 +27,15 @@ class Scrapper:
         if not os.path.isdir(data_dir):
             raise NotADirectoryError(f'{data_dir}')
     
-    def export_historic_data(self, interval: str='1d', period: str='10y', start=None, end=None) -> dict:
+    def export_historic_data(self, interval: str='1d', period: str='max', start=None, end=None) -> dict:
         _fnames = {}
         for ticker in self.ticker:
             csv_fname = f'{ticker}_{interval}_{period}_({start}-{end}).csv'
             csv_fpath = os.path.join(data_dir, csv_fname)
 
-            data = yf.download(ticker, start=start, end=end, period=period, interval=interval, group_by='ticker')
+            data: pd.DataFrame = yf.download(ticker, start=start, end=end, period=period, interval=interval, group_by='ticker')
             data.index.names = ['Datetime']
+            data.drop(['Adj Close','Dividends','Stock Splits'], axis=1, inplace=True, errors='ignore') # drop 'Adj Close' column if exists
             data.to_csv(csv_fpath, index=True)
             _fnames[ticker] = csv_fname
         return _fnames
@@ -45,7 +46,9 @@ class Scrapper:
         if isinstance(self.yf_ticker_obj, yf.Tickers):
             yf_ticker_obj = self.yf_ticker_obj.tickers.values()
         for obj in yf_ticker_obj:
-            data = obj.history(start=start, end=end, period=period, interval=interval)
+            data: pd.DataFrame = obj.history(start=start, end=end, period=period, interval=interval)
+            data.index.names = ['Datetime']
+            data.drop(['Adj Close','Dividends','Stock Splits'], axis=1, inplace=True, errors='ignore') # drop 'Adj Close' column if exists
             _dfs[obj.ticker] = data
         return _dfs
 
