@@ -4,6 +4,7 @@ from sklearn.exceptions import NotFittedError
 from torch.utils.data import Dataset
 from torch import Tensor
 import polars as pl
+import numpy as np
 import torch
 
 from abc import abstractmethod
@@ -23,18 +24,25 @@ class DatasetBase(Dataset):
         pass
 
 class RNNDataset(DatasetBase):
-    def __init__(self, lf: pl.LazyFrame, train: bool, non_temporal: list, temporal: list, target: list, seq_length: int=30, split: float=0.20):
+    def __init__(self, 
+                 lf: pl.LazyFrame, 
+                 train: bool, 
+                 non_temporal: list, temporal: list, target: list, 
+                 look_back_len: int=30, forecast_len: int=5,    # by default we look_back 30 samples to forecast 5 new samples
+                 split: float=0.20):
+        assert forecast_len < look_back_len, "forecast_len >= look_back_len is not considered as optimal"
         self.lf = lf
         self.train_flag = train
         self.non_temporal = non_temporal
         self.temporal = temporal
         self.features = self.non_temporal + self.temporal
         self.target = target
-        self.seq_length = seq_length
+        self.look_back_len = look_back_len
+        self.forecast_len = forecast_len
         self.non_temporal_scaler = RobustScaler()
         self.target_scaler = RobustScaler()
         self.tensors = self.__read_data__(split)
-        pass
+        assert all(self.tensors[0].size(0) == tensor.size(0) for tensor in self.tensors), "Size mismatch between tensors"
 
     @property
     def __lf_len__(self) -> int:
@@ -49,28 +57,31 @@ class RNNDataset(DatasetBase):
         target_tensor: Tensor = self.fit_transform(target_pl_df, self.target_scaler)
         non_temporal_tensor: Tensor = self.fit_transform(non_temporal_pl_df, self.non_temporal_scaler)
         features_tensor = torch.cat((non_temporal_tensor, temporal_tensor), dim=1)
-        X = torch.empty((features_tensor.size(0) - self.seq_length + 1, self.seq_length, features_tensor.size(1)), dtype=torch.float32)
-        y = torch.empty((target_tensor.size(0) - self.seq_length + 1, self.seq_length, target_tensor.size(1)), dtype=torch.float32)
-        for i in range(X.size(0)):
-            for j in range(self.seq_length):
-                X[i][j][:] = features_tensor[i+j][:]
-                y[i][j][:] = target_tensor[i+j][:]
+        X = []; y = []
+        for i in range(features_tensor.size(0) - self.look_back_len - self.forecast_len):
+            look_back_idx = i + self.look_back_len
+            forecast_idx = look_back_idx + self.forecast_len
+            X += [features_tensor[i:look_back_idx]]
+            y += [target_tensor[look_back_idx:forecast_idx]]
+        X = torch.from_numpy(np.array(X).reshape(-1, self.look_back_len, features_tensor.size(1))).to(torch.float32)
+        y = torch.from_numpy(np.array(y).reshape(-1, self.forecast_len, target_tensor.size(1))).to(torch.float32)
         return (X, y)
     
     def fit_transform(self, pl_df: pl.DataFrame, scaler: RobustScaler) -> Tensor:
+        scaler.set_output(transform='polars')
+        pl_df: pl.DataFrame = scaler.fit_transform(pl_df)
+        return pl_df.to_torch(return_type='tensor', dtype=pl.Float32)
+    
+    def inverse_transform(self, y: Tensor) -> pl.DataFrame:
         try:
-            check_is_fitted(scaler)
-            raise ValueError(f"'{scaler}' is already fitted!")
-        except NotFittedError:
-            scaler.set_output(transform='polars')
-            pl_df: pl.DataFrame = scaler.fit_transform(pl_df)
-            return pl_df.to_torch(return_type='tensor', dtype=pl.Float32)
-    
-    def inverse_transform(self) -> Tensor:
-        return
-    
-    def __len__(self):
-        return self.tensors[0].size(0)
+            check_is_fitted(self.target_scaler)
+            y: pl.DataFrame = self.target_scaler.inverse_transform(y)
+            return y
+        except NotFittedError as e:
+            print(e.add_note(f"'{self.target_scaler}' is not fitted yet"))
     
     def __getitem__(self, idx):
         return tuple(tensor[idx] for tensor in self.tensors)
+    
+    def __len__(self):
+        return self.tensors[0].size(0)
