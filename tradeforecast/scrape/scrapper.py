@@ -33,7 +33,7 @@ class Scrapper:
             csv_fname = f'{ticker}_{interval}_{period}_({start}-{end}).csv'
             csv_fpath = os.path.join(data_dir, csv_fname)
 
-            data: pd.DataFrame = yf.download(ticker, start=start, end=end, period=period, interval=interval, group_by='ticker')
+            data: pd.DataFrame = yf.download(ticker, start=start, end=end, period=period, interval=interval, multi_level_index=False)
             data.index.names = ['Datetime']
             data.drop(['Adj Close','Dividends','Stock Splits'], axis=1, inplace=True, errors='ignore') # drop 'Adj Close' column if exists
             data.to_csv(csv_fpath, index=True)
