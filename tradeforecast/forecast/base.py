@@ -14,7 +14,6 @@ class BaseModel(nn.Module):
 
 class RNNBase(BaseModel):    
     def train_model(self, 
-                    x: Tensor, 
                     criterion: nn.L1Loss | nn.MSELoss | nn.HuberLoss, 
                     optimizer: optim.Adam | optim.SGD | optim.Optimizer,
                     n_epochs: int,
@@ -22,15 +21,15 @@ class RNNBase(BaseModel):
                     learning_rate: float=0.001):
         criterion = criterion()
         optimizer = optimizer(**{'params':self.parameters(),'lr':learning_rate})
-        hidden_size = getattr(self, 'hidden_size')
-        input_size = getattr(self, 'input_size')
+        device = getattr(self, 'device')
+        output_size = getattr(self, 'output_size')
         for epoch in range(n_epochs):
             self.train()
             for train_x, train_y in data_loader:
-                train_x: Tensor; train_y: Tensor
-                train_x = train_x.view(-1, hidden_size, input_size)
-                
-                output = self(train_x)
+                train_x: Tensor = train_x.to(device)
+                train_y: Tensor = train_y.view(-1, output_size).to(device)
+
+                output: Tensor = self(train_x)
                 loss: Tensor = criterion(output, train_y)
 
                 optimizer.zero_grad()
@@ -44,6 +43,5 @@ class RNNBase(BaseModel):
     @torch.inference_mode
     def predict(self):
         assert torch.is_inference_mode_enabled(), "torch is not in inference_mode!"
-        print(self.fc_linear)
         self.eval()
         return
