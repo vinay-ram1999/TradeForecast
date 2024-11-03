@@ -41,7 +41,19 @@ class RNNBase(BaseModel):
         return
     
     @torch.inference_mode
-    def predict(self):
+    def test_model(self, data_loader: DataLoader) -> tuple[Tensor, Tensor]:
         assert torch.is_inference_mode_enabled(), "torch is not in inference_mode!"
-        self.eval()
-        return
+        device = getattr(self, 'device')
+        output_size = getattr(self, 'output_size')
+        y_preds = []; y = []
+        for test_x, test_y in data_loader:
+            self.eval()
+            test_x: Tensor = test_x.to(device)
+            test_y: Tensor = test_y.view(-1, output_size)
+
+            output: Tensor = self(test_x)
+            y_preds += [output]
+            y += [test_y]
+        y = torch.cat(y, dim=0)
+        y_preds = torch.cat(y_preds, dim=0)
+        return (y, y_preds)

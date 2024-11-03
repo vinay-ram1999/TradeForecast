@@ -40,5 +40,7 @@ lstm_kwargs = {'input_size': len(train_dataset.features),
 
 lstm_model = LSTM(**lstm_kwargs)
 
-lstm_model.train_model(nn.HuberLoss, optim.Adam, 10, train_loader, 0.001)
-#lstm_model.predict()
+lstm_model.train_model(nn.HuberLoss, optim.Adam, 5, train_loader, 0.001)
+
+y, y_preds = lstm_model.test_model(test_loader)
+print(y.size(), y_preds.size())

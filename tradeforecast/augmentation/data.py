@@ -6,6 +6,8 @@ from ..constants import data_dir
 
 class DataEntryPoint(object):
     def __init__(self, csv_fpath: str, datetime_var: str='Datetime') -> None:
+        csv_fpath = os.path.abspath(os.path.join(data_dir, csv_fpath))
+        assert os.path.isfile(csv_fpath), f"'{csv_fpath}' does not exist"
         self.fpath = csv_fpath
         self.datetime_var = datetime_var
         self.base_vars = self.data.select(pl.all().exclude(datetime_var)).collect_schema().names()
@@ -17,7 +19,7 @@ class DataEntryPoint(object):
         if hasattr(self, "_data"):
             return self._data
         else:
-            self._data = pl.scan_csv(os.path.join(data_dir, self.fpath), try_parse_dates=True)
+            self._data = pl.scan_csv(self.fpath, try_parse_dates=True)
             if self._data.collect_schema()[self.datetime_var] == pl.Datetime:
                 self._data = self._data.with_columns(pl.col(self.datetime_var).dt.convert_time_zone(time_zone='EST'))   # WARNING: currently only converting to EST
             return self._data
