@@ -1,5 +1,5 @@
 *.csv
-*.pth
+#*.pth should be able to save and load models from cuda
 
 *.pyc
 
