@@ -27,10 +27,11 @@ class RNNDataset(DatasetBase):
     def __init__(self, 
                  lf: pl.LazyFrame, 
                  train: bool, 
-                 non_temporal: list, temporal: list, target: list, 
+                 non_temporal: list, temporal: list, target: str, 
                  look_back_len: int=30, forecast_len: int=5,    # by default we look_back 30 samples to forecast 5 new samples
                  split: float=0.20):
         assert forecast_len < look_back_len, "forecast_len >= look_back_len is not considered as optimal"
+        assert isinstance(target, str), "target variable must be a string"
         self.lf = lf
         self.train_flag = train
         self.non_temporal = non_temporal
@@ -51,9 +52,9 @@ class RNNDataset(DatasetBase):
     def __read_data__(self, split) -> tuple[Tensor, ...]:
         slice_idx = int(math.ceil((1.0 - split)*self.__lf_len__))
         self.lf = self.lf.slice(offset=0,length=slice_idx) if self.train_flag else self.lf.slice(offset=slice_idx,length=None)
-        temporal_tensor: Tensor = self.lf.select(self.temporal).slice(0, self.__lf_len__ - 1).collect().to_torch(return_type='tensor', dtype=pl.Float32)
-        non_temporal_pl_df = self.lf.select(self.non_temporal).slice(0, self.__lf_len__ - 1).collect()
-        target_pl_df = self.lf.with_columns(pl.col(self.target).shift(n=-1)).select(self.target).drop_nulls().collect()
+        temporal_tensor: Tensor = self.lf.select(self.temporal).slice(0, self.__lf_len__ - self.look_back_len).collect().to_torch(return_type='tensor', dtype=pl.Float32)
+        non_temporal_pl_df = self.lf.select(self.non_temporal).slice(0, self.__lf_len__ - self.look_back_len).collect()
+        target_pl_df = self.lf.with_columns(pl.col(self.target).shift(n=-self.look_back_len).alias('shifted')).select('shifted').drop_nulls().collect()
         target_tensor: Tensor = self.fit_transform(target_pl_df, self.target_scaler)
         non_temporal_tensor: Tensor = self.fit_transform(non_temporal_pl_df, self.non_temporal_scaler)
         features_tensor = torch.cat((non_temporal_tensor, temporal_tensor), dim=1)
@@ -64,7 +65,7 @@ class RNNDataset(DatasetBase):
             X += [features_tensor[i:look_back_idx]]
             y += [target_tensor[look_back_idx:forecast_idx]]
         X = torch.from_numpy(np.array(X).reshape(-1, self.look_back_len, features_tensor.size(1))).to(torch.float32)
-        y = torch.from_numpy(np.array(y).reshape(-1, self.forecast_len, target_tensor.size(1))).to(torch.float32)
+        y = torch.from_numpy(np.array(y).reshape(-1, self.forecast_len)).to(torch.float32)
         return (X, y)
     
     def fit_transform(self, pl_df: pl.DataFrame, scaler: RobustScaler) -> Tensor:

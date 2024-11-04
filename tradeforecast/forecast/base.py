@@ -38,9 +38,10 @@ class RNNBase(BaseModel):
         device = getattr(self, 'device')
         for epoch in range(n_epochs):
             self.train()
-            epoch_loss = 0
+            _epoch_loss = 0
             for train_x, train_y in data_loader:
                 train_x: Tensor = train_x.to(device)
+                train_y: Tensor = train_y.to(device)
 
                 output: Tensor = self(train_x)
                 loss: Tensor = criterion(output, train_y)
@@ -49,8 +50,8 @@ class RNNBase(BaseModel):
                 optimizer.zero_grad()
                 loss.backward()
                 optimizer.step()
-            epoch_loss = epoch_loss / len(data_loader)
-            print(f'Epoch [{epoch+1}/{n_epochs}], Loss: {epoch_loss:.6f}')
+            _epoch_loss = _epoch_loss / len(data_loader)
+            print(f'Epoch: [{epoch+1}/{n_epochs}]; Loss: {_epoch_loss:.6f}')
         print("Training finished!!!")
         return
     

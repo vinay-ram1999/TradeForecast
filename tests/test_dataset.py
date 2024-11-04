@@ -23,17 +23,17 @@ lf = data_entry.data.drop_nulls()
 kwargs = {'lf': lf,
         'non_temporal': data_entry.non_temporal,
         'temporal': data_entry.temporal,
-        'target': data_entry.base_vars,
-        'look_back_len': 30,
-        'forecast_len': 5,
+        'target': 'Close',
+        'look_back_len': 10,
+        'forecast_len': 3,
         'split': 0.2}
 
 train_dataset = RNNDataset(train=True, **kwargs)
 test_dataset = RNNDataset(train=False, **kwargs)
 
-train_loader = DataLoader(train_dataset, batch_size=128, shuffle=False, drop_last=False)
-test_loader = DataLoader(test_dataset, batch_size=128, shuffle=False, drop_last=False)
+train_loader = DataLoader(train_dataset, batch_size=5, shuffle=False, drop_last=False)
+test_loader = DataLoader(test_dataset, batch_size=5, shuffle=False, drop_last=False)
 
-print(train_loader.batch_size)
-print(train_loader.dataset)
+X, y = next(iter(train_dataset))
 
+print(X.size(), y.size())
