@@ -31,16 +31,31 @@ train_loader = DataLoader(train_dataset, batch_size=128, shuffle=False, drop_las
 test_loader = DataLoader(test_dataset, batch_size=128, shuffle=False, drop_last=False)
 
 lstm_kwargs = {'input_size': len(train_dataset.features),
-              'hidden_size': 4,
+              'hidden_size': 1,
               'n_LSTM': 2,
-              'fc_out_size':[32,64,64,32],
+              'fc_out_size':[10],
               'output_size': len(train_dataset.target),
               'forecast_len': train_dataset.forecast_len,
-              'dropout': 0.2}
+              'dropout': 0.3}
 
 lstm_model = LSTM(**lstm_kwargs)
 
-lstm_model.train_model(nn.HuberLoss, optim.Adam, 5, train_loader, 0.001)
+lstm_model.train_model(nn.HuberLoss, optim.Adam, 1, train_loader, 0.001)
 
 y, y_preds = lstm_model.test_model(test_loader)
 print(y.size(), y_preds.size())
+
+model_fname = lstm_model.save_model_state(ticker_interval='AAPL_1d')
+
+lstm_kwargs = {'input_size': len(train_dataset.features),
+              'hidden_size': 1,
+              'n_LSTM': 2,
+              'fc_out_size':[10],
+              'output_size': len(train_dataset.target),
+              'forecast_len': train_dataset.forecast_len,
+              'dropout': 0.3}
+
+lstm_loaded_model = LSTM(**lstm_kwargs)
+lstm_loaded_model.load_model_state(model_fname)
+y_loaded, y_preds_loaded = lstm_model.test_model(test_loader)
+print(y_loaded.size(), y_preds_loaded.size())

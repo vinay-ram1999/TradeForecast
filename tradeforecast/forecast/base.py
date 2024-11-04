@@ -2,15 +2,29 @@ from torch.utils.data import DataLoader
 from torch import nn, optim, Tensor
 import torch
 
+import os
+
 from ..constants import models_dir
 
 class BaseModel(nn.Module):
     @staticmethod
-    def get_device_type():
+    def get_device_type() -> str:
         return 'cuda' if torch.cuda.is_available() else 'cpu'
     
-    def save_model_state(self):
-        return
+    def __set_global_seed__(self, seed: int):
+        torch.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+    
+    def save_model_state(self, ticker_interval: str) -> str:
+        n_params = sum(p.numel() for p in self.parameters() if p.requires_grad)
+        model_fname = f'{ticker_interval}_{self.__class__.__name__}_{n_params}.pth'
+        torch.save(self.state_dict(), os.path.join(models_dir, model_fname))
+        return model_fname
+    
+    def load_model_state(self, model_fname: str):
+        device = getattr(self, 'device')
+        self.load_state_dict(torch.load(os.path.join(models_dir, model_fname), weights_only=True, map_location=device))
+        self.eval()
 
 class RNNBase(BaseModel):    
     def train_model(self, 
@@ -22,12 +36,10 @@ class RNNBase(BaseModel):
         criterion = criterion()
         optimizer = optimizer(**{'params':self.parameters(),'lr':learning_rate})
         device = getattr(self, 'device')
-        output_size = getattr(self, 'output_size')
         for epoch in range(n_epochs):
             self.train()
             for train_x, train_y in data_loader:
                 train_x: Tensor = train_x.to(device)
-                train_y: Tensor = train_y.view(-1, output_size).to(device)
 
                 output: Tensor = self(train_x)
                 loss: Tensor = criterion(output, train_y)
@@ -44,12 +56,10 @@ class RNNBase(BaseModel):
     def test_model(self, data_loader: DataLoader) -> tuple[Tensor, Tensor]:
         assert torch.is_inference_mode_enabled(), "torch is not in inference_mode!"
         device = getattr(self, 'device')
-        output_size = getattr(self, 'output_size')
         y_preds = []; y = []
         for test_x, test_y in data_loader:
             self.eval()
             test_x: Tensor = test_x.to(device)
-            test_y: Tensor = test_y.view(-1, output_size)
 
             output: Tensor = self(test_x)
             y_preds += [output]

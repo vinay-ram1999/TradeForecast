@@ -4,11 +4,9 @@ import torch
 from .base import RNNBase
 
 class LSTM(RNNBase):
-    def __init__(self, **kwargs):
-        """
-        LSTM neural network
-        kwargs must include: 
-        """
+    def __init__(self, seed: int=42, **kwargs):
+        """LSTM neural network"""
+        self.__set_global_seed__(seed)
         self.input_size: int = kwargs.get('input_size')
         self.hidden_size: int = kwargs.get('hidden_size')
         self.n_LSTM: int = kwargs.get('n_LSTM')
@@ -36,6 +34,6 @@ class LSTM(RNNBase):
         for i in range(self.forecast_len):
             out, _ = self.lstm(x, (h0, c0))
             output[:,i,:] = self.fc_linear(out[:,-1,:])
-        return output.view(-1, self.output_size)
+        return output
 
 
