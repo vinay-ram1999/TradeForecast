@@ -45,7 +45,7 @@ class RNNBase(BaseModel):
 
                 output: Tensor = self(train_x)
                 loss: Tensor = criterion(output, train_y)
-                epoch_loss += loss.item()
+                _epoch_loss += loss.item()
 
                 optimizer.zero_grad()
                 loss.backward()

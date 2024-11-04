@@ -18,7 +18,6 @@ class LSTM(RNNBase):
         self.fc_out_size.append(self.output_size)
         super().__init__()
         self.device = torch.device(self.get_device_type())
-        print(f"The device is set to ---> '{self.device}'")
         self.lstm = nn.LSTM(input_size=self.input_size, hidden_size=self.hidden_size, num_layers=self.n_LSTM, batch_first=True, dropout=self.dropout, device=self.device)
         self.fc_linear = nn.Sequential()
         for i in range(self.n_fc):
