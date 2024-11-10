@@ -50,7 +50,7 @@ model_fname = lstm_model.save_model_state(ticker_interval='AAPL_1d')
 lstm_kwargs = {'input_size': len(rnn_dataset.features),
               'hidden_size': 5,
               'n_LSTM': 2,
-              'fc_out_size':[10],
+              'fc_out_size':[],
               'output_size': rnn_dataset.forecast_len,
               'dropout': 0.3}
 

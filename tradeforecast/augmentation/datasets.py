@@ -46,12 +46,15 @@ class RNNDataset(DatasetBase):
         return self.lf.select(pl.len()).collect().item()
 
     def __read_data__(self) -> tuple[Tensor, ...]:
-        temporal_tensor: Tensor = self.lf.select(self.temporal).slice(0, self.__lf_len__ - self.look_back_len).collect().to_torch(return_type='tensor', dtype=pl.Float32)
         non_temporal_pl_df = self.lf.select(self.non_temporal).slice(0, self.__lf_len__ - self.look_back_len).collect()
         target_pl_df = self.lf.with_columns(pl.col(self.target).shift(n=-self.look_back_len).alias('shifted')).select('shifted').drop_nulls().collect()
         target_tensor: Tensor = self.fit_transform(target_pl_df, self.target_scaler)
         non_temporal_tensor: Tensor = self.fit_transform(non_temporal_pl_df, self.non_temporal_scaler)
-        features_tensor = torch.cat((non_temporal_tensor, temporal_tensor), dim=1)
+        if self.temporal == list():
+            features_tensor = non_temporal_tensor
+        else:
+            temporal_tensor: Tensor = self.lf.select(self.temporal).slice(0, self.__lf_len__ - self.look_back_len).collect().to_torch(return_type='tensor', dtype=pl.Float32)
+            features_tensor = torch.cat((non_temporal_tensor, temporal_tensor), dim=1)
         X = []; y = []
         for i in range(features_tensor.size(0) - self.look_back_len - self.forecast_len):
             look_back_idx = i + self.look_back_len

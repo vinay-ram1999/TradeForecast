@@ -38,8 +38,8 @@ class RNNBase(BaseModel):
         criterion = criterion()
         optimizer = optimizer(**{'params':self.parameters(),'lr':learning_rate})
         device = getattr(self, 'device')
+        self.train()
         for epoch in range(n_epochs):
-            self.train()
             _epoch_loss = 0
             for train_x, train_y in data_loader:
                 train_x: Tensor = train_x.to(device)
@@ -62,8 +62,8 @@ class RNNBase(BaseModel):
         assert torch.is_inference_mode_enabled(), "torch is not in inference_mode!"
         device = getattr(self, 'device')
         y_preds = []; y = []
+        self.eval()
         for test_x, test_y in data_loader:
-            self.eval()
             test_x: Tensor = test_x.to(device)
 
             output: Tensor = self(test_x)
