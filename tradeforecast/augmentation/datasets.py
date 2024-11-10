@@ -8,7 +8,6 @@ import numpy as np
 import torch
 
 from abc import abstractmethod
-import math
 
 class DatasetBase(Dataset):
     @abstractmethod
@@ -25,15 +24,12 @@ class DatasetBase(Dataset):
 
 class RNNDataset(DatasetBase):
     def __init__(self, 
-                 lf: pl.LazyFrame, 
-                 train: bool, 
+                 lf: pl.LazyFrame,
                  non_temporal: list, temporal: list, target: str, 
-                 look_back_len: int=30, forecast_len: int=5,    # by default we look_back 30 samples to forecast 5 new samples
-                 split: float=0.20):
+                 look_back_len: int=30, forecast_len: int=5):    # by default we look_back 30 samples to forecast 5 new samples
         assert forecast_len < look_back_len, "forecast_len >= look_back_len is not considered as optimal"
         assert isinstance(target, str), "target variable must be a string"
         self.lf = lf
-        self.train_flag = train
         self.non_temporal = non_temporal
         self.temporal = temporal
         self.features = self.non_temporal + self.temporal
@@ -42,16 +38,14 @@ class RNNDataset(DatasetBase):
         self.forecast_len = forecast_len
         self.non_temporal_scaler = RobustScaler()
         self.target_scaler = RobustScaler()
-        self.tensors = self.__read_data__(split)
+        self.tensors = self.__read_data__()
         assert all(self.tensors[0].size(0) == tensor.size(0) for tensor in self.tensors), "Size mismatch between tensors"
 
     @property
     def __lf_len__(self) -> int:
         return self.lf.select(pl.len()).collect().item()
 
-    def __read_data__(self, split) -> tuple[Tensor, ...]:
-        slice_idx = int(math.ceil((1.0 - split)*self.__lf_len__))
-        self.lf = self.lf.slice(offset=0,length=slice_idx) if self.train_flag else self.lf.slice(offset=slice_idx,length=None)
+    def __read_data__(self) -> tuple[Tensor, ...]:
         temporal_tensor: Tensor = self.lf.select(self.temporal).slice(0, self.__lf_len__ - self.look_back_len).collect().to_torch(return_type='tensor', dtype=pl.Float32)
         non_temporal_pl_df = self.lf.select(self.non_temporal).slice(0, self.__lf_len__ - self.look_back_len).collect()
         target_pl_df = self.lf.with_columns(pl.col(self.target).shift(n=-self.look_back_len).alias('shifted')).select('shifted').drop_nulls().collect()
@@ -81,7 +75,7 @@ class RNNDataset(DatasetBase):
         except NotFittedError as e:
             print(e.add_note(f"'{self.target_scaler}' is not fitted yet"))
     
-    def __getitem__(self, idx):
+    def __getitem__(self, idx) -> tuple[Tensor, Tensor]:
         return tuple(tensor[idx] for tensor in self.tensors)
     
     def __len__(self):
