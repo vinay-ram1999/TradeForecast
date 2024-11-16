@@ -20,8 +20,7 @@ class DataEntryPoint(object):
             return self._data
         else:
             self._data = pl.scan_csv(self.fpath, try_parse_dates=True)
-            if self._data.collect_schema()[self.datetime_var] == pl.Datetime:
-                self._data = self._data.with_columns(pl.col(self.datetime_var).dt.convert_time_zone(time_zone='EST'))   # WARNING: currently only converting to EST
+            self._data = self._data.with_columns(pl.col(self.datetime_var).cast(pl.Datetime).dt.convert_time_zone(time_zone='EST'))   # WARNING: currently only converting to EST
             return self._data
 
     @data.setter

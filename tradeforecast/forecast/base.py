@@ -26,6 +26,7 @@ class BaseModel(nn.Module):
     def load_model_state(self, model_fname: str):
         device = getattr(self, 'device')
         self.load_state_dict(torch.load(os.path.join(models_dir, model_fname), weights_only=True, map_location=device))
+        print(f"Loaded '{model_fname.strip('.pth')}' model state_dict")
         self.eval()
 
 class RNNBase(BaseModel):    

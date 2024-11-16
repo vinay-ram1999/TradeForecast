@@ -1,5 +1,5 @@
 from torch.utils.data import DataLoader
-from torch import nn, optim
+from torch import nn, optim, Tensor
 
 from tradeforecast.augmentation import DataEntryPoint, Indicators, FeatureEngg, RNNDataset, train_test_split
 from tradeforecast import LSTM
@@ -12,7 +12,7 @@ indicators = Indicators(data_entry)
 indicators.add_macd_sl().add_rsi().add_atr()
 
 features = FeatureEngg(data_entry)
-features.add_quarters().add_weeks()
+features.add_quarters().add_weeks().add_hours()
 
 lf = data_entry.data.drop_nulls()
 
@@ -34,6 +34,7 @@ test_loader = DataLoader(test_dataset, batch_size=3, shuffle=False, drop_last=Fa
 lstm_kwargs = {'input_size': len(rnn_dataset.features),
               'hidden_size': 5,
               'n_LSTM': 2,
+              'bidirectional': True,
               'fc_out_size':[],
               'output_size': rnn_dataset.forecast_len,
               'dropout': 0.3}
@@ -42,6 +43,7 @@ lstm_model = LSTM(**lstm_kwargs)
 
 lstm_model.train_model(nn.HuberLoss, optim.Adam, 2, train_loader, 0.001)
 
+y: Tensor; y_preds: Tensor
 y, y_preds = lstm_model.test_model(test_loader)
 print(y.size(), y_preds.size())
 
@@ -50,6 +52,7 @@ model_fname = lstm_model.save_model_state(ticker_interval='AAPL_1d')
 lstm_kwargs = {'input_size': len(rnn_dataset.features),
               'hidden_size': 5,
               'n_LSTM': 2,
+              'bidirectional': True,
               'fc_out_size':[],
               'output_size': rnn_dataset.forecast_len,
               'dropout': 0.3}

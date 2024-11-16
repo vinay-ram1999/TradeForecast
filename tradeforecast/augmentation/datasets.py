@@ -11,7 +11,7 @@ from abc import abstractmethod
 
 class DatasetBase(Dataset):
     @abstractmethod
-    def __read_lf__(self):
+    def __read_data__(self):
         pass
 
     @abstractmethod
