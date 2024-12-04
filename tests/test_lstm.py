@@ -41,7 +41,7 @@ lstm_kwargs = {'input_size': len(rnn_dataset.features),
 
 lstm_model = LSTM(**lstm_kwargs)
 
-lstm_model.train_model(nn.HuberLoss, optim.Adam, 2, train_loader, 0.001)
+lstm_model.train_model(criterion=nn.HuberLoss, optimizer=optim.Adam, n_epochs=2, data_loader=train_loader, min_learning_rate=0.0001)
 
 y: Tensor; y_preds: Tensor
 y, y_preds = lstm_model.test_model(test_loader)

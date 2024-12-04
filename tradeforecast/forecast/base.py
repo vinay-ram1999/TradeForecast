@@ -35,9 +35,10 @@ class RNNBase(BaseModel):
                     optimizer: optim.Adam | optim.SGD | optim.Optimizer,
                     n_epochs: int,
                     data_loader: DataLoader,
-                    learning_rate: float=0.001):
+                    min_learning_rate: float=0.0001):
         criterion = criterion()
-        optimizer = optimizer(**{'params':self.parameters(),'lr':learning_rate})
+        optimizer = optimizer(**{'params':self.parameters(),'lr':1.0})
+        scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.9)
         device = getattr(self, 'device')
         self.train()
         for epoch in range(n_epochs):
@@ -54,7 +55,9 @@ class RNNBase(BaseModel):
                 loss.backward()
                 optimizer.step()
             _epoch_loss = _epoch_loss / len(data_loader)
-            print(f'Epoch: [{epoch+1}/{n_epochs}]; Loss: {_epoch_loss:.6f}')
+            print(f'Epoch: {epoch+1}/{n_epochs}\tLR: {scheduler.get_last_lr()[-1]}\tLoss: {_epoch_loss:.6f}')
+            if min_learning_rate < scheduler.get_last_lr()[-1]:
+                scheduler.step()
         print("Training finished!!!")
         return
     

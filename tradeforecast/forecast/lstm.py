@@ -23,7 +23,7 @@ class LSTM(RNNBase):
         self.fc_linear = nn.Sequential()
         for i in range(self.n_fc):
             self.fc_linear.add_module(f"Linear_{i+1}", nn.Linear(in_features=self.fc_out_size[i], out_features=self.fc_out_size[i+1], device=self.device))
-        pass
+        self.to(self.device)
 
     def forward(self, x: Tensor) -> Tensor:
         batch_len = x.size(0)   # since batch_first
