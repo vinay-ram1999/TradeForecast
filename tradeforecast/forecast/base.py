@@ -38,7 +38,7 @@ class RNNBase(BaseModel):
                     min_learning_rate: float=0.0001):
         criterion = criterion()
         optimizer = optimizer(**{'params':self.parameters(),'lr':1.0})
-        scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.9)
+        scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.95)
         device = getattr(self, 'device')
         self.train()
         for epoch in range(n_epochs):
