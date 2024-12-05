@@ -5,6 +5,7 @@ from .feature_utils import (
     date_to_quarters,
     date_to_weeks,
     datetime_to_hours,
+    datetime_to_minutes,
 )
 
 class FeatureEngg(object):
@@ -26,6 +27,12 @@ class FeatureEngg(object):
 
     def add_hours(self) -> Self:
         lf, col_names = datetime_to_hours(self.data_entry.data, self.data_entry.datetime_var)
+        self.data_entry.data = lf
+        self.data_entry.temporal += col_names
+        return self
+    
+    def add_minutes(self) -> Self:
+        lf, col_names = datetime_to_minutes(self.data_entry.data, self.data_entry.datetime_var)
         self.data_entry.data = lf
         self.data_entry.temporal += col_names
         return self

@@ -16,10 +16,7 @@ class BaseModel(nn.Module):
         torch.cuda.manual_seed_all(seed)
     
     def save_model_state(self, ticker_interval: str) -> str:
-        device = getattr(self, 'device')
-        output_size = getattr(self, 'output_size')
-        n_params = sum(p.numel() for p in self.parameters() if p.requires_grad)
-        model_fname = f'{ticker_interval}_{self.__class__.__name__}_{n_params}_{output_size}-{device}.pth'
+        model_fname = f'{ticker_interval}_{self}.pth'
         torch.save(self.state_dict(), os.path.join(models_dir, model_fname))
         return model_fname
     
@@ -29,7 +26,7 @@ class BaseModel(nn.Module):
         print(f"Loaded '{model_fname.strip('.pth')}' model state_dict")
         self.eval()
 
-class RNNBase(BaseModel):    
+class RNNBase(BaseModel):
     def train_model(self, 
                     criterion: nn.L1Loss | nn.MSELoss | nn.HuberLoss, 
                     optimizer: optim.Adam | optim.SGD | optim.Optimizer,

@@ -26,3 +26,12 @@ def datetime_to_hours(lf: pl.LazyFrame, var_name: str, col_name: str=None) -> pl
                          ).with_columns((2 * math.pi * (pl.col(col_name) / period)).sin().round(10).alias(f'{col_name}_sin'),
                                         (2 * math.pi * (pl.col(col_name) / period)).cos().round(10).alias(f'{col_name}_cos')).drop(col_name)
     return lf, [f'{col_name}_sin', f'{col_name}_cos']
+
+def datetime_to_minutes(lf: pl.LazyFrame, var_name: str, col_name: str=None) -> pl.LazyFrame:
+    assert lf.collect_schema()[var_name] == pl.Datetime, f"To extract minutes the variable must be of 'Datetime' type not '{lf.collect_schema()[var_name]}' type"
+    period = 60 # number of minutes in an hour
+    col_name = 'Minute' if col_name is None else col_name
+    lf = lf.with_columns(pl.col(var_name).dt.minute().alias(col_name)
+                         ).with_columns((2 * math.pi * (pl.col(col_name) / period)).sin().round(10).alias(f'{col_name}_sin'),
+                                        (2 * math.pi * (pl.col(col_name) / period)).cos().round(10).alias(f'{col_name}_cos')).drop(col_name)
+    return lf, [f'{col_name}_sin', f'{col_name}_cos']
