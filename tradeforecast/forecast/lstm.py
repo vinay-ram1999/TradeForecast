@@ -15,7 +15,7 @@ class LSTM(RNNBase):
         self.output_size: int = kwargs.get('output_size')
         self.dropout: float = kwargs.get('dropout')
         self.n_fc: int = len(self.fc_out_size) + 1    # self.n_fc --> number of fully connected layers + output_layer
-        self.fc_out_size.insert(0, 2 * self.hidden_size if self.bidirectional else self. hidden_size)
+        self.fc_out_size.insert(0, self.hidden_size)
         self.fc_out_size.append(self.output_size)
         super().__init__()
         self.device = torch.device(self.get_device_type())
@@ -24,6 +24,14 @@ class LSTM(RNNBase):
         for i in range(self.n_fc):
             self.fc_linear.add_module(f"Linear_{i+1}", nn.Linear(in_features=self.fc_out_size[i], out_features=self.fc_out_size[i+1], device=self.device))
 
+<<<<<<< Updated upstream
+=======
+    def __repr__(self) -> str:
+        name = 'biLSTM' if self.bidirectional else 'LSTM'
+        n_params = sum(p.numel() for p in self.parameters() if p.requires_grad)
+        return f'{name}({n_params}_{self.input_size}_{self.output_size})-{self.device}'
+
+>>>>>>> Stashed changes
     def forward(self, x: Tensor) -> Tensor:
         batch_len = x.size(0)   # since batch_first
         # Initialize hidden and cell states with zeros (optional)
@@ -31,8 +39,11 @@ class LSTM(RNNBase):
         h0 = torch.zeros(n_LSTM, batch_len, self.hidden_size).requires_grad_().to(self.device)
         c0 = torch.zeros(n_LSTM, batch_len, self.hidden_size).requires_grad_().to(self.device)
 
-        x, _ = self.lstm(x, (h0, c0))
-        x = self.fc_linear(x[:, -1, :])
+        _, (hn, _) = self.lstm(x, (h0, c0))
+        x = self.fc_linear(hn[-1])
         return x
+<<<<<<< Updated upstream
 
 
+=======
+>>>>>>> Stashed changes

@@ -18,18 +18,23 @@ class TFModel(RNNBase):
         self.output_size: int = kwargs.get('output_size')
         self.dropout: float = kwargs.get('dropout')
         self.n_fc: int = len(self.fc_out_size) + 1    # self.n_fc --> number of fully connected layers + output_layer
-        self.fc_out_size.insert(0, 2 * self.hidden_size if self.bidirectional else self. hidden_size)
+        self.fc_out_size.insert(0, self.hidden_size)
         self.fc_out_size.append(self.output_size)
         super().__init__()
         self.device = torch.device(self.get_device_type())
         self.conv1d = nn.Conv1d(in_channels=self.input_size, out_channels=self.conv_out_size, kernel_size=self.kernel_size, stride=1, padding=0, device=self.device)
-        self.bnorm = nn.BatchNorm1d(self.conv_out_size)
+        self.bnorm = nn.BatchNorm1d(self.conv_out_size, device=self.device)
         self.avg_pool = nn.AvgPool1d(kernel_size=2, stride=2)
         self.lstm = nn.LSTM(input_size=self.conv_out_size, hidden_size=self.hidden_size, num_layers=self.n_LSTM, bidirectional=self.bidirectional, batch_first=True, dropout=self.dropout, device=self.device)
         self.fc_linear = nn.Sequential()
         for i in range(self.n_fc):
             self.fc_linear.add_module(f"Linear_{i+1}", nn.Linear(in_features=self.fc_out_size[i], out_features=self.fc_out_size[i+1], device=self.device))
-        
+    
+    def __repr__(self) -> str:
+        name = 'biTF' if self.bidirectional else 'TF'
+        n_params = sum(p.numel() for p in self.parameters() if p.requires_grad)
+        return f'{name}({n_params}_{self.input_size}_{self.output_size})-{self.device}'
+
     def forward(self, x: Tensor) -> Tensor:
         batch_len = x.size(0)   # since batch_first
         # Initialize hidden and cell states with zeros (optional)
@@ -44,8 +49,8 @@ class TFModel(RNNBase):
         x = self.avg_pool(x)
 
         x = x.permute(0, 2, 1)  # re-arrange back to (batch, sequence, features)
-        x, _ = self.lstm(x, (h0, c0))
-        x = self.fc_linear(x[:, -1, :])
+        _, (hn, _) = self.lstm(x, (h0, c0))
+        x = self.fc_linear(hn[-1])
         return x
 
 
