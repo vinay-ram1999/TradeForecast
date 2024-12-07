@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from lightning import Trainer
 
 from tradeforecast.augmentation import DataEntryPoint, Indicators, FeatureEngg, RNNDataset, train_val_test_split
-from tradeforecast import LSTM
+from tradeforecast import TFTransformer
 
 fpath = 'AAPL_1d_max_(None-None).csv'
 
@@ -22,7 +22,7 @@ dataset_kwargs = {'lf': lf,
                  'non_temporal': data_entry.non_temporal,
                  'temporal': data_entry.temporal,
                  'target': 'Close',
-                 'look_back_len': 30,
+                 'look_back_len': 50,
                  'forecast_len': 7}
 
 rnn_dataset = RNNDataset(**dataset_kwargs)
@@ -36,25 +36,23 @@ train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=False, d
 val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, drop_last=False, num_workers=num_workers)
 test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, drop_last=False, num_workers=num_workers)
 
-lstm_kwargs = {'input_size': len(rnn_dataset.features),
-              'hidden_size': 5,
-              'n_LSTM': 2,
-              'bidirectional': True,
-              'fc_out_size':[],
-              'output_size': rnn_dataset.forecast_len,
-              'dropout': 0.1,
-              'criterion': F.mse_loss,
-              'initial_lr': 1.0,
-              'min_lr': 0.001,
-              'optimizer': optim.Adam}
+tft_kwargs = {'input_size': len(rnn_dataset.features),
+            'nhead': 4,
+            'd_model': 64,
+            'num_layers': 5,
+            'output_size': rnn_dataset.forecast_len,
+            'dropout': 0.2,
+            'criterion': F.mse_loss,
+            'initial_lr': 1.0,
+            'min_lr': 0.001,
+            'optimizer': optim.Adam}
 
-lstm_model = LSTM(**lstm_kwargs)
+tft_model = TFTransformer(**tft_kwargs)
 
-trainer = Trainer(fast_dev_run=True, max_epochs=3)
+trainer = Trainer(fast_dev_run=False, max_epochs=5)
 
-trainer.fit(lstm_model, train_dataloaders=train_loader, val_dataloaders=val_loader)
+trainer.fit(tft_model, train_dataloaders=train_loader, val_dataloaders=val_loader)
 
-trainer.test(lstm_model, test_loader)
+trainer.test(tft_model, test_loader)
 
-model_fname = lstm_model.save_model_state(ticker_interval='AAPL_1d')
-print(model_fname)
+model_fname = tft_model.save_model_state(ticker_interval='AAPL_1d')

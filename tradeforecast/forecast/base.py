@@ -1,5 +1,6 @@
 from torch.utils.data import DataLoader
 from torch import nn, optim, Tensor
+import lightning as L
 import torch
 
 import os
@@ -73,3 +74,60 @@ class RNNBase(BaseModel):
         y = torch.cat(y, dim=0)
         y_preds = torch.cat(y_preds, dim=0)
         return (y, y_preds)
+
+class LitBase(L.LightningModule):
+    def __set_global_seed__(self, seed: int):
+        torch.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+
+    def save_model_state(self, ticker_interval: str) -> str:
+        output_size = getattr(self, 'output_size')
+        n_params = sum(p.numel() for p in self.parameters() if p.requires_grad)
+        model_fname = f'{ticker_interval}_{self.__class__.__name__}_{n_params}_{output_size}.pth'
+        torch.save(self.state_dict(), os.path.join(models_dir, model_fname))
+        return model_fname
+    
+    def load_model_state(self, model_fname: str):
+        self.load_state_dict(torch.load(os.path.join(models_dir, model_fname), weights_only=True))
+        print(f"Loaded '{model_fname.strip('.pth')}' model state_dict")
+
+    def training_step(self, batch, batch_idx):
+        x, y = batch
+        output: Tensor = self(x)
+        criterion = getattr(self, 'criterion')
+        loss = criterion(output, y)
+
+        min_lr = getattr(self, 'min_lr')
+        lr_scheduler: optim.lr_scheduler.LRScheduler = self.lr_schedulers()
+        lr = lr_scheduler.get_last_lr()[-1]
+        if min_lr < lr:
+            lr_scheduler.step()
+        
+        self.log('lr', lr, prog_bar=True)
+        self.log('train_loss', loss, prog_bar=True)
+        return loss
+    
+    def validation_step(self, batch, batch_idx):
+        x, y = batch
+        output: Tensor = self(x)
+        criterion = getattr(self, 'criterion')
+        loss = criterion(output, y)
+        self.log('val_loss', loss, prog_bar=True)
+    
+    def test_step(self, batch, batch_idx):
+        x, y = batch
+        output: Tensor = self(x)
+        criterion = getattr(self, 'criterion')
+        loss = criterion(output, y)
+        self.log('test_loss', loss)
+
+    def configure_optimizers(self):
+        optimizer = getattr(self, 'optimizer')
+        initial_lr = getattr(self, 'initial_lr')
+
+        #initialize the oprimizer
+        optimizer = optimizer(**{'params':self.parameters(),'lr':initial_lr})
+        return {
+                "optimizer": optimizer,
+                "lr_scheduler": {"scheduler": optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.95)}
+                }
