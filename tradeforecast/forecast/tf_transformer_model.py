@@ -1,15 +1,14 @@
-from torch import nn, Tensor
+from torch import nn, Tensor, optim
 import torch
 
 import math
 
-from .base import RNNBase
+from .base import LitBase
     
-class PositionalEncoding(RNNBase):
+class PositionalEncoding(LitBase):
     def __init__(self, d_model: int, dropout: float, max_len: int = 5000):
         """ref: https://discuss.pytorch.org/t/how-to-modify-the-positional-encoding-in-torch-nn-transformer/104308/3"""
         super().__init__()
-        self.device = torch.device(self.get_device_type())
         
         self.dropout = nn.Dropout(p=dropout)
 
@@ -29,9 +28,10 @@ class PositionalEncoding(RNNBase):
         return self.dropout(x)
 
 
-class TFTransformer(RNNBase):
+class TFTransformer(LitBase):
     def __init__(self, seed: int=42, **kwargs):
         """TFTransformer Model"""
+        super().__init__()
         self.__set_global_seed__(seed)
         self.input_size: int = kwargs.get('input_size')
         self.nhead: int = kwargs.get('nhead')   # Number of attention heads
@@ -39,13 +39,20 @@ class TFTransformer(RNNBase):
         self.num_layers: int = kwargs.get('num_layers')   # Number of transformer encoder layers
         self.output_size: int = kwargs.get('output_size')
         self.dropout: float = kwargs.get('dropout')
-        super().__init__()
-        self.device = torch.device(self.get_device_type())
-        self.input_layer = nn.Linear(self.input_size, self.d_model, device=self.device)
+        self.criterion = kwargs.get('criterion')
+        self.optimizer: optim.Optimizer = kwargs.get('optimizer')
+        self.initial_lr: float = kwargs.get('initial_lr')
+        self.min_lr: float = kwargs.get('min_lr')
+        self.input_layer = nn.Linear(self.input_size, self.d_model)
         self.positional_encoding = PositionalEncoding(self.d_model, self.dropout)
-        encoder_layer = nn.TransformerEncoderLayer(d_model=self.d_model, nhead=self.nhead, batch_first=True, dropout=self.dropout, device=self.device)
+        encoder_layer = nn.TransformerEncoderLayer(d_model=self.d_model, nhead=self.nhead, batch_first=True, dropout=self.dropout)
         self.encoder = nn.TransformerEncoder(encoder_layer, num_layers=self.num_layers)
-        self.output_layer = nn.Linear(self.d_model, self.output_size, device=self.device)
+        self.output_layer = nn.Linear(self.d_model, self.output_size)
+    
+    def __repr__(self) -> str:
+        name = 'TFTransformer'
+        n_params = sum(p.numel() for p in self.parameters() if p.requires_grad)
+        return f'{name}({n_params}_{self.input_size}_{self.output_size})'
 
     def forward(self, x: Tensor):
         x = self.input_layer(x)  # (batch_size, seq_len, d_model)
