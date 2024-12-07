@@ -33,14 +33,8 @@ class LSTM(LitBase):
         n_params = sum(p.numel() for p in self.parameters() if p.requires_grad)
         return f'{name}({n_params}_{self.input_size}_{self.output_size})'
 
-    def __repr__(self) -> str:
-        name = 'biLSTM' if self.bidirectional else 'LSTM'
-        n_params = sum(p.numel() for p in self.parameters() if p.requires_grad)
-        return f'{name}({n_params},{self.input_size},{self.output_size})-{self.device}'
-
     def forward(self, x: Tensor) -> Tensor:
         batch_len = x.size(0)   # since batch_first
-<<<<<<< Updated upstream
         # Initialize hidden and cell states with zeros (optional)
         n_LSTM = 2 * self.n_LSTM if self.bidirectional else self.n_LSTM
         h = torch.zeros(n_LSTM, batch_len, self.hidden_size).requires_grad_().to(self.device)
@@ -49,12 +43,3 @@ class LSTM(LitBase):
         _, (h, _) = self.lstm(x, (h, c))
         x = self.fc_linear(h[-1])
         return x
-=======
-        # Initialize hidden and cell states with zeros
-        h0 = torch.zeros(self.n_LSTM_dim, batch_len, self.hidden_size).requires_grad_().to(self.device)
-        c0 = torch.zeros(self.n_LSTM_dim, batch_len, self.hidden_size).requires_grad_().to(self.device)
-        _, (out, _) = self.lstm(x, (h0, c0))
-        output = self.fc_linear(out[-1])
-        return output
->>>>>>> Stashed changes
-
