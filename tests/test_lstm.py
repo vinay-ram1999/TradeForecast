@@ -44,8 +44,7 @@ lstm_kwargs = {'input_size': len(rnn_dataset.features),
               'output_size': rnn_dataset.forecast_len,
               'dropout': 0.1,
               'criterion': F.mse_loss,
-              'initial_lr': 1.0,
-              'min_lr': 0.001,
+              'lr': 1.0,
               'optimizer': optim.Adam}
 
 lstm_model = LSTM(**lstm_kwargs)

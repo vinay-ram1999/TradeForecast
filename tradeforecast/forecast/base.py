@@ -75,6 +75,7 @@ class RNNBase(BaseModel):
         y_preds = torch.cat(y_preds, dim=0)
         return (y, y_preds)
 
+
 class LitBase(L.LightningModule):
     def __set_global_seed__(self, seed: int):
         torch.manual_seed(seed)
@@ -91,19 +92,18 @@ class LitBase(L.LightningModule):
         self.load_state_dict(torch.load(os.path.join(models_dir, model_fname), weights_only=True))
         print(f"Loaded '{model_fname.strip('.pth')}' model state_dict")
 
+    def configure_optimizers(self):
+        optimizer = getattr(self, 'optimizer')
+        lr = getattr(self, 'lr')
+        #initialize the oprimizer
+        optimizer = optimizer(**{'params':self.parameters(),'lr':lr})
+        return optimizer
+
     def training_step(self, batch, batch_idx):
         x, y = batch
         output: Tensor = self(x)
         criterion = getattr(self, 'criterion')
         loss = criterion(output, y)
-
-        min_lr = getattr(self, 'min_lr')
-        lr_scheduler: optim.lr_scheduler.LRScheduler = self.lr_schedulers()
-        lr = lr_scheduler.get_last_lr()[-1]
-        if min_lr < lr:
-            lr_scheduler.step()
-        
-        self.log('lr', lr, prog_bar=True)
         self.log('train_loss', loss, prog_bar=True)
         return loss
     
@@ -113,6 +113,7 @@ class LitBase(L.LightningModule):
         criterion = getattr(self, 'criterion')
         loss = criterion(output, y)
         self.log('val_loss', loss, prog_bar=True)
+        return loss
     
     def test_step(self, batch, batch_idx):
         x, y = batch
@@ -121,13 +122,15 @@ class LitBase(L.LightningModule):
         loss = criterion(output, y)
         self.log('test_loss', loss)
 
-    def configure_optimizers(self):
-        optimizer = getattr(self, 'optimizer')
-        initial_lr = getattr(self, 'initial_lr')
-
-        #initialize the oprimizer
-        optimizer = optimizer(**{'params':self.parameters(),'lr':initial_lr})
-        return {
-                "optimizer": optimizer,
-                "lr_scheduler": {"scheduler": optim.lr_scheduler.ExponentialLR(optimizer, gamma=0.95)}
-                }
+    @torch.inference_mode
+    def predict(self, data_loader: DataLoader) -> tuple[Tensor, Tensor]:
+        assert torch.is_inference_mode_enabled(), "torch is not in inference_mode!"
+        y_preds = []; y = []
+        for test_x, test_y in data_loader:
+            test_x: Tensor = test_x.to(self.device)
+            output: Tensor = self(test_x)
+            y_preds += [output]
+            y += [test_y]
+        y = torch.cat(y, dim=0)
+        y_preds = torch.cat(y_preds, dim=0)
+        return (y, y_preds)

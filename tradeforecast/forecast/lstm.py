@@ -18,8 +18,7 @@ class LSTM(LitBase):
         self.dropout: float = kwargs.get('dropout')
         self.criterion = kwargs.get('criterion')
         self.optimizer: optim.Optimizer = kwargs.get('optimizer')
-        self.initial_lr: float = kwargs.get('initial_lr')
-        self.min_lr: float = kwargs.get('min_lr')
+        self.lr: float = kwargs.get('lr')
         self.n_fc: int = len(self.fc_out_size) + 1    # self.n_fc --> number of fully connected layers + output_layer
         self.fc_out_size.insert(0, self.hidden_size)
         self.fc_out_size.append(self.output_size)
@@ -34,12 +33,6 @@ class LSTM(LitBase):
         return f'{name}({n_params}_{self.input_size}_{self.output_size})'
 
     def forward(self, x: Tensor) -> Tensor:
-        batch_len = x.size(0)   # since batch_first
-        # Initialize hidden and cell states with zeros (optional)
-        n_LSTM = 2 * self.n_LSTM if self.bidirectional else self.n_LSTM
-        h = torch.zeros(n_LSTM, batch_len, self.hidden_size).requires_grad_().to(self.device)
-        c = torch.zeros(n_LSTM, batch_len, self.hidden_size).requires_grad_().to(self.device)
-
-        _, (h, _) = self.lstm(x, (h, c))
+        _, (h, _) = self.lstm(x)
         x = self.fc_linear(h[-1])
         return x

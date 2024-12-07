@@ -11,8 +11,8 @@ def plot_rnn_forecasts(actual: np.ndarray, predicted: np.ndarray):
     # Plot for each forecast day
     for i in range(n_forecasts):
         ax: Axes = axes[i]
-        ax.plot(range(n_samples), actual[:, i], label=f'Actual Day {i+1}', color='b')
-        ax.plot(range(n_samples), predicted[:, i], label=f'Predicted Day {i+1}', color='r')
+        ax.plot(range(n_samples), actual[:, i], label=f'Actual t+{i+1}', color='b')
+        ax.plot(range(n_samples), predicted[:, i], label=f'Predicted t+{i+1}', color='r')
 
         # Labels and legend
         ax.set_ylabel(f'Day {i+1} Close Price')

@@ -20,8 +20,7 @@ class TFModel(LitBase):
         self.dropout: float = kwargs.get('dropout')
         self.criterion = kwargs.get('criterion')
         self.optimizer: optim.Optimizer = kwargs.get('optimizer')
-        self.initial_lr: float = kwargs.get('initial_lr')
-        self.min_lr: float = kwargs.get('min_lr')
+        self.lr: float = kwargs.get('lr')
         self.n_fc: int = len(self.fc_out_size) + 1    # self.n_fc --> number of fully connected layers + output_layer
         self.fc_out_size.insert(0, self.hidden_size)
         self.fc_out_size.append(self.output_size)
