@@ -77,6 +77,10 @@ class RNNBase(BaseModel):
 
 
 class LitBase(L.LightningModule):
+    training_step_outputs = []
+    validation_step_outputs = []
+    test_step_outputs = []
+
     def __set_global_seed__(self, seed: int):
         torch.manual_seed(seed)
         torch.cuda.manual_seed_all(seed)
@@ -95,32 +99,58 @@ class LitBase(L.LightningModule):
     def configure_optimizers(self):
         optimizer = getattr(self, 'optimizer')
         lr = getattr(self, 'lr')
-        #initialize the oprimizer
-        optimizer = optimizer(**{'params':self.parameters(),'lr':lr})
-        return optimizer
+        optim_kwargs = {'params':self.parameters(),'lr':lr, 'momentum':0.9} if optimizer == optim.SGD else {'params':self.parameters(),'lr':lr}
+        optimizer = optimizer(**optim_kwargs)   # initialize the oprimizer
+        scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=15, cooldown=5, min_lr=0.0001, verbose=True,)
+        return {'optimizer': optimizer,
+                'lr_scheduler': {'scheduler': scheduler,
+                                 'monitor': 'train/loss'}}
 
     def training_step(self, batch, batch_idx):
         x, y = batch
         output: Tensor = self(x)
         criterion = getattr(self, 'criterion')
         loss = criterion(output, y)
-        self.log('train_loss', loss, prog_bar=True)
+        self.training_step_outputs.append(loss)
+        #self.log('train_loss', loss, on_epoch=True)
         return loss
-    
+
+    def on_train_epoch_end(self):
+        avg_loss = torch.stack(self.training_step_outputs).mean()
+        tensorboard_logs = {'train/loss': avg_loss}
+        tensorboard_logs['step'] = self.current_epoch
+        self.log_dict(tensorboard_logs, prog_bar=True)
+        self.training_step_outputs.clear()
+        scheduler: optim.lr_scheduler.LRScheduler = self.lr_schedulers()
+        self.log('lr', scheduler.get_last_lr()[-1], prog_bar=True)
+        scheduler.step(avg_loss)
+
     def validation_step(self, batch, batch_idx):
         x, y = batch
         output: Tensor = self(x)
         criterion = getattr(self, 'criterion')
         loss = criterion(output, y)
-        self.log('val_loss', loss, prog_bar=True)
-        return loss
+        self.validation_step_outputs.append(loss)
+
+    def on_validation_epoch_end(self):
+        avg_loss = torch.stack(self.validation_step_outputs).mean()
+        tensorboard_logs = {'val/loss': avg_loss}
+        tensorboard_logs['step'] = self.current_epoch
+        self.log_dict(tensorboard_logs, prog_bar=True)
+        self.validation_step_outputs.clear()
     
     def test_step(self, batch, batch_idx):
         x, y = batch
         output: Tensor = self(x)
         criterion = getattr(self, 'criterion')
         loss = criterion(output, y)
-        self.log('test_loss', loss)
+        self.test_step_outputs.append(loss)
+
+    def on_test_epoch_end(self):
+        avg_loss = torch.stack(self.test_step_outputs).mean()
+        tensorboard_logs = {'test/loss': avg_loss}
+        self.log_dict(tensorboard_logs, prog_bar=True)
+        self.test_step_outputs.clear()
 
     @torch.inference_mode
     def predict(self, data_loader: DataLoader) -> tuple[Tensor, Tensor]:

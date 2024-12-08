@@ -2,7 +2,7 @@ from torch.utils.data import Dataset, Subset
 
 import math
 
-def train_val_test_split(dataset: Dataset, val_size: float=0.1, test_size: float=0.1) -> tuple[Subset]:
+def train_val_test_split(dataset: Dataset, val_size: float=None, test_size: float=None) -> tuple[Subset]:
     dataset_len = len(dataset)
     test_start_idx = int(math.ceil((1.0 - test_size)*dataset_len))
     train_end_idx = int(math.ceil((1.0 - test_size - val_size)*dataset_len)) if val_size else test_start_idx
