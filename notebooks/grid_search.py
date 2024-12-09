@@ -44,7 +44,7 @@ test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, dro
 
 max_epoch = 500
 hidden_size_opts = [32, 64]
-n_LSTM_opts = [2, 4]
+n_LSTM_opts = [2]
 dropout_opts = [0]
 criterion_opts = [F.l1_loss, F.mse_loss]
 lr_opts = [0.1]

@@ -1,4 +1,4 @@
-*.csv
+data/*.csv
 #*.pth should be able to save and load models from cuda
 
 # ignore models trained on local cpu

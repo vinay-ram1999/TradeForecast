@@ -99,7 +99,7 @@ class LitBase(L.LightningModule):
     def configure_optimizers(self):
         optimizer = getattr(self, 'optimizer')
         lr = getattr(self, 'lr')
-        optim_kwargs = {'params':self.parameters(),'lr':lr, 'momentum':0.9} if optimizer == optim.SGD else {'params':self.parameters(),'lr':lr}
+        optim_kwargs = {'params':self.parameters(),'lr':lr, 'momentum':0} if optimizer == optim.SGD else {'params':self.parameters(),'lr':lr}
         optimizer = optimizer(**optim_kwargs)   # initialize the oprimizer
         scheduler = optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='min', factor=0.5, patience=10, min_lr=0.00001)
         return {'optimizer': optimizer,
