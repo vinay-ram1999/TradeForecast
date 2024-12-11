@@ -9,8 +9,7 @@ import os
 from tradeforecast.augmentation import RNNDataset, DataEntryPoint, Indicators, FeatureEngg, train_val_test_split
 from tradeforecast.forecast import LSTM, TFModel, TFTransformer
 from tradeforecast.constants import data_dir
-
-from tradeforecast import Scrapper
+from tradeforecast.scrape import Scrapper
 
 ticker = 'NVDA'
 scrapper = Scrapper(ticker)
