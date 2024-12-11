@@ -1,19 +1,23 @@
-from tradeforecast.augmentation import RNNDataset
-from tradeforecast.viz import plot_rnn_forecasts
-from tradeforecast.forecast.base import LitBase
 from torch.utils.data import DataLoader
-from lightning import Trainer
-from torch import Tensor
-from torch import optim
 import torch.nn.functional as F
-from tradeforecast.augmentation import DataEntryPoint, Indicators, FeatureEngg
-from tradeforecast.augmentation import train_val_test_split
-from tradeforecast.forecast import LSTM, TFModel, TFTransformer
-from tradeforecast.constants import data_dir
-import os
+from lightning import Trainer
+from torch import optim
 import pandas as pd
 
-data_entry = DataEntryPoint(csv_fpath='AAPL_1d_max_(2010-01-01-2024-12-06).csv')
+import os
+
+from tradeforecast.augmentation import RNNDataset, DataEntryPoint, Indicators, FeatureEngg, train_val_test_split
+from tradeforecast.forecast import LSTM, TFModel, TFTransformer
+from tradeforecast.constants import data_dir
+
+from tradeforecast import Scrapper
+
+ticker = 'NVDA'
+scrapper = Scrapper(ticker)
+
+df_dict = scrapper.fetch_historic_data(interval='1d', start='2015-01-01', end='2024-12-06')
+
+data_entry = DataEntryPoint(df=df_dict[ticker])
 
 indicators = Indicators(data_entry)
 indicators.add_moving_average().add_moving_average(n=30).add_macd_sl().add_rsi().add_atr()
@@ -21,15 +25,15 @@ indicators.add_moving_average().add_moving_average(n=30).add_macd_sl().add_rsi()
 features = FeatureEngg(data_entry)
 features.add_quarters().add_weeks()
 
-lf = data_entry.data.drop_nulls().drop('High','Low')
+lf = data_entry.data.drop_nulls()
 
 look_back_len = 60
 forecast_len = 5
-batch_size = 128
-num_workers = 10
+batch_size = 256
+num_workers = 8
 
 dataset_kwargs = {'lf': lf,
-                'non_temporal': [x for x in data_entry.non_temporal if x not in ['High', 'Low']],
+                'non_temporal': data_entry.non_temporal,
                 'temporal': data_entry.temporal,
                 'target': 'Close',
                 'look_back_len': look_back_len,
