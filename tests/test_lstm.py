@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from lightning import Trainer
 
 from tradeforecast.augmentation import DataEntryPoint, Indicators, FeatureEngg, RNNDataset, train_val_test_split
-from tradeforecast import LSTM
+from tradeforecast.forecast import LSTM
 
 fpath = 'AAPL_1d_max_(None-None).csv'
 

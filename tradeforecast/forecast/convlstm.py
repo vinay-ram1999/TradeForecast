@@ -4,9 +4,9 @@ import torch
 
 from .base import LitBase
 
-class TFModel(LitBase):
+class ConvLSTM(LitBase):
     def __init__(self, seed: int=42, **kwargs):
-        """TraedeForecast (TF) Model"""
+        """ConvLSTM Model"""
         super().__init__()
         self.__set_global_seed__(seed)
         self.input_size: int = kwargs.get('input_size')
@@ -33,7 +33,7 @@ class TFModel(LitBase):
             self.fc_linear.add_module(f"Linear_{i+1}", nn.Linear(in_features=self.fc_out_size[i], out_features=self.fc_out_size[i+1]))
     
     def __repr__(self) -> str:
-        name = 'biTF' if self.bidirectional else 'TF'
+        name = 'biConvLSTM' if self.bidirectional else 'ConvLSTM'
         n_params = sum(p.numel() for p in self.parameters() if p.requires_grad)
         return f'{name}({n_params}_{self.input_size}_{self.output_size})'
 

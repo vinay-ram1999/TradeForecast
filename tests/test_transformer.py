@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from lightning import Trainer
 
 from tradeforecast.augmentation import DataEntryPoint, Indicators, FeatureEngg, RNNDataset, train_val_test_split
-from tradeforecast import TFTransformer
+from tradeforecast.forecast import EncTransformer
 
 fpath = 'AAPL_1d_max_(None-None).csv'
 
@@ -36,7 +36,7 @@ train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=False, d
 val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, drop_last=False, num_workers=num_workers)
 test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, drop_last=False, num_workers=num_workers)
 
-tft_kwargs = {'input_size': len(rnn_dataset.features),
+et_kwargs = {'input_size': len(rnn_dataset.features),
             'nhead': 4,
             'd_model': 64,
             'num_layers': 5,
@@ -46,12 +46,12 @@ tft_kwargs = {'input_size': len(rnn_dataset.features),
             'lr': 1.0,
             'optimizer': optim.Adam}
 
-tft_model = TFTransformer(**tft_kwargs)
+et_model = EncTransformer(**et_kwargs)
 
 trainer = Trainer(fast_dev_run=False, max_epochs=5)
 
-trainer.fit(tft_model, train_dataloaders=train_loader, val_dataloaders=val_loader)
+trainer.fit(et_model, train_dataloaders=train_loader, val_dataloaders=val_loader)
 
-trainer.test(tft_model, test_loader)
+trainer.test(et_model, test_loader)
 
-model_fname = tft_model.save_model_state(ticker_interval='AAPL_1d')
+model_fname = et_model.save_model_state(ticker_interval='AAPL_1d')

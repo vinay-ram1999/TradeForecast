@@ -28,9 +28,9 @@ class PositionalEncoding(LitBase):
         return self.dropout(x)
 
 
-class TFTransformer(LitBase):
+class EncTransformer(LitBase):
     def __init__(self, seed: int=42, **kwargs):
-        """TFTransformer Model"""
+        """EncTransformer Model"""
         super().__init__()
         self.__set_global_seed__(seed)
         self.input_size: int = kwargs.get('input_size')
@@ -49,7 +49,7 @@ class TFTransformer(LitBase):
         self.output_layer = nn.Linear(self.d_model, self.output_size)
     
     def __repr__(self) -> str:
-        name = 'TFTransformer'
+        name = 'EncTransformer'
         n_params = sum(p.numel() for p in self.parameters() if p.requires_grad)
         return f'{name}({n_params}_{self.input_size}_{self.output_size})'
 
