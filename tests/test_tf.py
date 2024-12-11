@@ -4,7 +4,7 @@ import torch.nn.functional as F
 from lightning import Trainer
 
 from tradeforecast.augmentation import DataEntryPoint, Indicators, FeatureEngg, RNNDataset, train_val_test_split
-from tradeforecast import TFModel
+from tradeforecast.forecast import ConvLSTM
 
 fpath = 'AAPL_1d_max_(None-None).csv'
 
@@ -36,7 +36,7 @@ train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=False, d
 val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, drop_last=False, num_workers=num_workers)
 test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, drop_last=False, num_workers=num_workers)
 
-tf_kwargs = {'input_size': len(rnn_dataset.features),
+clstm_kwargs = {'input_size': len(rnn_dataset.features),
             'conv_out_size': len(rnn_dataset.features)*2,
             'kernel_size': 3,
             'hidden_size': 5,
@@ -49,12 +49,12 @@ tf_kwargs = {'input_size': len(rnn_dataset.features),
             'lr': 1.0,
             'optimizer': optim.SGD}
 
-tf_model = TFModel(**tf_kwargs)
+clstm_model = ConvLSTM(**clstm_kwargs)
 
 trainer = Trainer(fast_dev_run=False, max_epochs=3)
 
-trainer.fit(tf_model, train_dataloaders=train_loader, val_dataloaders=val_loader)
+trainer.fit(clstm_model, train_dataloaders=train_loader, val_dataloaders=val_loader)
 
-trainer.test(tf_model, test_loader)
+trainer.test(clstm_model, test_loader)
 
-model_fname = tf_model.save_model_state(ticker_interval='AAPL_1d')
+model_fname = clstm_model.save_model_state(ticker_interval='AAPL_1d')
