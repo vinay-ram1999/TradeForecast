@@ -86,7 +86,7 @@ for data_version, data_entry in data_entries.items():
                                         'optimizer': optim.SGD}
 
                             lstm_model = LSTM(**lstm_kwargs)
-                            lstm_trainer = Trainer(fast_dev_run=True, max_epochs=max_epoch, log_every_n_steps=10, check_val_every_n_epoch=100)
+                            lstm_trainer = Trainer(fast_dev_run=False, max_epochs=max_epoch, log_every_n_steps=10, check_val_every_n_epoch=100)
                             lstm_trainer.fit(lstm_model, train_dataloaders=train_loader, val_dataloaders=test_loader)
                             train_loss: Tensor = lstm_trainer.callback_metrics.get('train/loss', None)
                             lstm_trainer.test(lstm_model, test_loader)
@@ -123,7 +123,7 @@ for data_version, data_entry in data_entries.items():
                                                 'optimizer': optim.SGD}
 
                                     clstm_model = ConvLSTM(**clstm_kwargs)
-                                    clstm_trainer = Trainer(fast_dev_run=True, max_epochs=max_epoch, log_every_n_steps=10, check_val_every_n_epoch=100)
+                                    clstm_trainer = Trainer(fast_dev_run=False, max_epochs=max_epoch, log_every_n_steps=10, check_val_every_n_epoch=100)
                                     clstm_trainer.fit(clstm_model, train_dataloaders=train_loader, val_dataloaders=test_loader)
                                     train_loss: Tensor = clstm_trainer.callback_metrics.get('train/loss', None)
                                     clstm_trainer.test(clstm_model, test_loader)
@@ -158,7 +158,7 @@ for data_version, data_entry in data_entries.items():
                                         'optimizer': optim.SGD}
 
                             et_model = EncTransformer(**et_kwargs)
-                            et_trainer = Trainer(fast_dev_run=True, max_epochs=max_epoch, log_every_n_steps=10, check_val_every_n_epoch=100)
+                            et_trainer = Trainer(fast_dev_run=False, max_epochs=max_epoch, log_every_n_steps=10, check_val_every_n_epoch=100)
                             et_trainer.fit(et_model, train_dataloaders=train_loader, val_dataloaders=test_loader)
                             train_loss: Tensor = et_trainer.callback_metrics.get('train/loss', None)
                             et_trainer.test(et_model, test_loader)
