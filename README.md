@@ -12,7 +12,7 @@ virtualenv .venv
 nano .venv/bin/activate
 
 # Add this line at the end of .venv/bin/activate
-export PYTHONPATH='$PWD'
+export PYTHONPATH=$PWD
 
 # Add this line in the deactivate function in .venv/bin/activate
 unset PYTHONPATH # This will reset this variable once you deactivate your venv

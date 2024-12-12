@@ -157,7 +157,7 @@ class LitBase(L.LightningModule):
         assert torch.is_inference_mode_enabled(), "torch is not in inference_mode!"
         y_preds = []; y = []
         for test_x, test_y in data_loader:
-            test_x: Tensor = test_x.to(self.device)
+            test_x: Tensor = test_x
             output: Tensor = self(test_x)
             y_preds += [output]
             y += [test_y]

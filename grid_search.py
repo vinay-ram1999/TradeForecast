@@ -24,15 +24,15 @@ indicators.add_moving_average().add_moving_average(n=30).add_macd_sl().add_rsi()
 features = FeatureEngg(data_entry)
 features.add_quarters().add_weeks()
 
-lf = data_entry.data.drop_nulls()
+lf = data_entry.data.drop_nulls().drop('High','Low')
 
 look_back_len = 60
 forecast_len = 5
-batch_size = 256
+batch_size = 128
 num_workers = 8
 
 dataset_kwargs = {'lf': lf,
-                'non_temporal': data_entry.non_temporal,
+                'non_temporal': [x for x in data_entry.non_temporal if x not in ['High', 'Low']],
                 'temporal': data_entry.temporal,
                 'target': 'Close',
                 'look_back_len': look_back_len,
@@ -81,7 +81,7 @@ for dropout in dropout_opts:
 
                         lstm_model = LSTM(**lstm_kwargs)
                         lstm_trainer = Trainer(fast_dev_run=False, max_epochs=max_epoch, log_every_n_steps=10, check_val_every_n_epoch=100)
-                        lstm_trainer.fit(lstm_model, train_dataloaders=train_loader)
+                        lstm_trainer.fit(lstm_model, train_dataloaders=train_loader, val_dataloaders=test_loader)
                         for param in lstm_params.keys():
                             if not param in ['train_loss', 'test_loss', 'n_params']:
                                 val = getattr(lstm_model, param)
@@ -114,7 +114,7 @@ for dropout in dropout_opts:
 
                                 clstm_model = ConvLSTM(**clstm_kwargs)
                                 clstm_trainer = Trainer(fast_dev_run=False, max_epochs=max_epoch, log_every_n_steps=10, check_val_every_n_epoch=100)
-                                clstm_trainer.fit(clstm_model, train_dataloaders=train_loader)
+                                clstm_trainer.fit(clstm_model, train_dataloaders=train_loader, val_dataloaders=test_loader)
                                 for param in clstm_params.keys():
                                     if not param in ['train_loss', 'test_loss', 'n_params']:
                                         val = getattr(clstm_model, param)
@@ -145,7 +145,7 @@ for dropout in dropout_opts:
 
                         et_model = EncTransformer(**et_kwargs)
                         et_trainer = Trainer(fast_dev_run=False, max_epochs=max_epoch, log_every_n_steps=10, check_val_every_n_epoch=100)
-                        et_trainer.fit(et_model, train_dataloaders=train_loader)
+                        et_trainer.fit(et_model, train_dataloaders=train_loader, val_dataloaders=test_loader)
                         for param in et_params.keys():
                             if not param in ['train_loss', 'test_loss', 'n_params']:
                                 val = getattr(et_model, param)
