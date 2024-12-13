@@ -33,25 +33,17 @@ class ConvLSTM(LitBase):
             self.fc_linear.add_module(f"Linear_{i+1}", nn.Linear(in_features=self.fc_out_size[i], out_features=self.fc_out_size[i+1]))
     
     def __repr__(self) -> str:
-        name = 'biConvLSTM' if self.bidirectional else 'ConvLSTM'
-        n_params = sum(p.numel() for p in self.parameters() if p.requires_grad)
-        return f'{name}({n_params}_{self.input_size}_{self.output_size})'
+        return 'biConvLSTM' if self.bidirectional else 'ConvLSTM'
 
     def forward(self, x: Tensor) -> Tensor:
-        batch_len = x.size(0)   # since batch_first
-        # Initialize hidden and cell states with zeros (optional)
-        n_LSTM = 2 * self.n_LSTM if self.bidirectional else self.n_LSTM
-        h = torch.zeros(n_LSTM, batch_len, self.hidden_size).requires_grad_().to(self.device)
-        c = torch.zeros(n_LSTM, batch_len, self.hidden_size).requires_grad_().to(self.device)
-
         # Conv1D expects (batch, features, sequence_length)
         x = x.permute(0, 2, 1)  # arrange to (batch, features, sequence)
         x = F.relu(self.conv1d(x))
-        x = self.bnorm(x)
+        x = self.bnorm(x)   # TODO apply BatchNorm after pooling
         x = self.avg_pool(x)
 
         x = x.permute(0, 2, 1)  # re-arrange back to (batch, sequence, features)
-        _, (h, _) = self.lstm(x, (h, c))
+        _, (h, _) = self.lstm(x)
         x = self.fc_linear(h[-1])
         return x
 

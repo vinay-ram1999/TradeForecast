@@ -28,9 +28,9 @@ features.add_quarters().add_weeks()
 
 data_entries = {'base': data_entry_base, 'feat_engg': data_entry_feat_engg}
 
-lstm_params = {'data_version':[], 'hidden_size':[], 'n_LSTM':[], 'dropout':[], 'criterion':[], 'lr':[], 'train_loss':[], 'test_loss':[], 'n_params':[], 'MAE':[], 'MSE':[], 'RMSE':[], 'R-squared':[]}
-clstm_params = {'data_version':[], 'conv_out_size': [], 'kernel_size': [], 'hidden_size': [], 'n_LSTM': [], 'dropout': [], 'criterion': [], 'lr': [], 'train_loss':[], 'test_loss':[], 'n_params':[], 'MAE':[], 'MSE':[], 'RMSE':[], 'R-squared':[]}
-et_params = {'data_version':[], 'nhead':[], 'd_model':[], 'num_layers': [], 'dropout':[], 'criterion':[], 'lr':[], 'train_loss':[], 'test_loss':[], 'n_params':[], 'MAE':[], 'MSE':[], 'RMSE':[], 'R-squared':[]}
+lstm_params = {'data_version':[], 'n_feat':[], 'hidden_size':[], 'n_LSTM':[], 'dropout':[], 'criterion':[], 'init_lr':[], 'final_lr':[], 'train_loss':[], 'test_loss':[], 'n_params':[], 'MAE':[], 'MSE':[], 'RMSE':[], 'R-squared':[]}
+clstm_params = {'data_version':[], 'n_feat':[], 'conv_out_size': [], 'kernel_size': [], 'hidden_size': [], 'n_LSTM': [], 'dropout': [], 'criterion': [], 'init_lr': [], 'final_lr':[], 'train_loss':[], 'test_loss':[], 'n_params':[], 'MAE':[], 'MSE':[], 'RMSE':[], 'R-squared':[]}
+et_params = {'data_version':[], 'n_feat':[], 'nhead':[], 'd_model':[], 'num_layers': [], 'dropout':[], 'criterion':[], 'init_lr':[], 'final_lr':[], 'train_loss':[], 'test_loss':[], 'n_params':[], 'MAE':[], 'MSE':[], 'RMSE':[], 'R-squared':[]}
 
 for data_version, data_entry in data_entries.items():
 
@@ -58,7 +58,7 @@ for data_version, data_entry in data_entries.items():
     max_epoch = 500
     hidden_size_opts = [32, 64]
     n_LSTM_opts = [2]
-    dropout_opts = [0]
+    dropout_opts = [0, 0.05]
     criterion_opts = [F.l1_loss, F.mse_loss]
     lr_opts = [0.1]
     conv_out_size_opts = [len(rnn_dataset.features)*2]
@@ -89,6 +89,7 @@ for data_version, data_entry in data_entries.items():
                             lstm_trainer = Trainer(fast_dev_run=False, max_epochs=max_epoch, log_every_n_steps=10, check_val_every_n_epoch=100)
                             lstm_trainer.fit(lstm_model, train_dataloaders=train_loader, val_dataloaders=test_loader)
                             train_loss: Tensor = lstm_trainer.callback_metrics.get('train/loss', None)
+                            final_lr: Tensor = lstm_trainer.callback_metrics.get('lr', None)
                             lstm_trainer.test(lstm_model, test_loader)
                             test_loss: Tensor = lstm_trainer.callback_metrics.get('test/loss', None)
                             for param in lstm_params.keys():
@@ -98,8 +99,11 @@ for data_version, data_entry in data_entries.items():
                                 except AttributeError:
                                     pass
                             lstm_params['data_version'].append(data_version)
+                            lstm_params['n_feat'].append(len(rnn_dataset.features))
                             lstm_params['n_params'].append(sum(x.numel() for x in lstm_model.parameters() if x.requires_grad))
                             lstm_params['train_loss'].append(train_loss.item())
+                            lstm_params['init_lr'].append(lr)
+                            lstm_params['final_lr'].append(final_lr.item())
                             lstm_params['test_loss'].append(test_loss.item())
                             y, y_pred = lstm_model.predict(test_loader)
                             lstm_metrics = calc_metrics(y, y_pred)
@@ -126,6 +130,7 @@ for data_version, data_entry in data_entries.items():
                                     clstm_trainer = Trainer(fast_dev_run=False, max_epochs=max_epoch, log_every_n_steps=10, check_val_every_n_epoch=100)
                                     clstm_trainer.fit(clstm_model, train_dataloaders=train_loader, val_dataloaders=test_loader)
                                     train_loss: Tensor = clstm_trainer.callback_metrics.get('train/loss', None)
+                                    final_lr: Tensor = clstm_trainer.callback_metrics.get('lr', None)
                                     clstm_trainer.test(clstm_model, test_loader)
                                     test_loss: Tensor = clstm_trainer.callback_metrics.get('test/loss', None)
                                     for param in clstm_params.keys():
@@ -135,8 +140,11 @@ for data_version, data_entry in data_entries.items():
                                         except AttributeError:
                                             pass
                                     clstm_params['data_version'].append(data_version)
+                                    clstm_params['n_feat'].append(len(rnn_dataset.features))
                                     clstm_params['n_params'].append(sum(x.numel() for x in clstm_model.parameters() if x.requires_grad))
                                     clstm_params['train_loss'].append(train_loss.item())
+                                    clstm_params['init_lr'].append(lr)
+                                    clstm_params['final_lr'].append(final_lr.item())
                                     clstm_params['test_loss'].append(test_loss.item())
                                     y, y_pred = clstm_model.predict(test_loader)
                                     clstm_metrics = calc_metrics(y, y_pred)
@@ -161,6 +169,7 @@ for data_version, data_entry in data_entries.items():
                             et_trainer = Trainer(fast_dev_run=False, max_epochs=max_epoch, log_every_n_steps=10, check_val_every_n_epoch=100)
                             et_trainer.fit(et_model, train_dataloaders=train_loader, val_dataloaders=test_loader)
                             train_loss: Tensor = et_trainer.callback_metrics.get('train/loss', None)
+                            final_lr: Tensor = et_trainer.callback_metrics.get('lr', None)
                             et_trainer.test(et_model, test_loader)
                             test_loss: Tensor = et_trainer.callback_metrics.get('test/loss', None)
                             for param in et_params.keys():
@@ -170,25 +179,28 @@ for data_version, data_entry in data_entries.items():
                                 except AttributeError:
                                     pass
                             et_params['data_version'].append(data_version)
+                            et_params['n_feat'].append(len(rnn_dataset.features))
                             et_params['n_params'].append(sum(x.numel() for x in et_model.parameters() if x.requires_grad))
                             et_params['train_loss'].append(train_loss.item())
+                            et_params['init_lr'].append(lr)
+                            et_params['final_lr'].append(final_lr.item())
                             et_params['test_loss'].append(test_loss.item())
                             y, y_pred = et_model.predict(test_loader)
                             et_metrics = calc_metrics(y, y_pred)
                             for metric in et_metrics.keys():
                                 et_params[metric].append(et_metrics[metric])
 
-lstm_params = pd.DataFrame(lstm_params)
+lstm_params = pd.DataFrame(lstm_params).round(5).sort_values(by='train_loss', ascending=True).reset_index(drop=True)
 lstm_params.index.name = 'model'
 print(lstm_params)
 lstm_params.to_csv(os.path.join(data_dir, 'lstm_params.csv'))
 
-clstm_params = pd.DataFrame(clstm_params)
+clstm_params = pd.DataFrame(clstm_params).round(5).sort_values(by='train_loss', ascending=True).reset_index(drop=True)
 clstm_params.index.name = 'model'
 print(clstm_params)
 clstm_params.to_csv(os.path.join(data_dir, 'clstm_params.csv'))
 
-et_params = pd.DataFrame(et_params)
+et_params = pd.DataFrame(et_params).round(5).sort_values(by='train_loss', ascending=True).reset_index(drop=True)
 et_params.index.name = 'model'
 print(et_params)
 et_params.to_csv(os.path.join(data_dir, 'et_params.csv'))

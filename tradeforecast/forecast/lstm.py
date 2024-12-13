@@ -28,9 +28,7 @@ class LSTM(LitBase):
             self.fc_linear.add_module(f"Linear_{i+1}", nn.Linear(in_features=self.fc_out_size[i], out_features=self.fc_out_size[i+1]))
 
     def __repr__(self) -> str:
-        name = 'biLSTM' if self.bidirectional else 'LSTM'
-        n_params = sum(p.numel() for p in self.parameters() if p.requires_grad)
-        return f'{name}({n_params}_{self.input_size}_{self.output_size})'
+        return 'biLSTM' if self.bidirectional else 'LSTM'
 
     def forward(self, x: Tensor) -> Tensor:
         _, (h, _) = self.lstm(x)

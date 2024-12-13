@@ -49,9 +49,7 @@ class EncTransformer(LitBase):
         self.output_layer = nn.Linear(self.d_model, self.output_size)
     
     def __repr__(self) -> str:
-        name = 'EncTransformer'
-        n_params = sum(p.numel() for p in self.parameters() if p.requires_grad)
-        return f'{name}({n_params}_{self.input_size}_{self.output_size})'
+        return 'EncTransformer'
 
     def forward(self, x: Tensor):
         x = self.input_layer(x)  # (batch_size, seq_len, d_model)
