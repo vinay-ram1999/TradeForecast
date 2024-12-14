@@ -2,7 +2,9 @@ from matplotlib.axes import Axes
 import matplotlib.pyplot as plt
 import numpy as np
 
-def plot_rnn_forecasts(actual: np.ndarray, predicted: np.ndarray):
+from .forecast.base import LitBase
+
+def plot_rnn_forecasts(model: LitBase, actual: np.ndarray, predicted: np.ndarray):
     n_samples, n_forecasts = actual.shape
 
     # Create subplots with one row per forecast day
@@ -21,6 +23,6 @@ def plot_rnn_forecasts(actual: np.ndarray, predicted: np.ndarray):
 
     # Common x-axis label and title
     axes[-1].set_xlabel('Samples')
-    plt.suptitle(f'Actual vs Predicted Close Prices of TradeForecast ({n_forecasts} Days)', fontsize=16)
+    plt.suptitle(f'Actual vs Predicted Close Prices for {model} Model ({n_forecasts} Days)', fontsize=16)
     fig.tight_layout(rect=[0, 0, 1, 0.96])  # Adjust layout to fit title
     plt.show()
