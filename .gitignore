@@ -5,6 +5,7 @@ data/*.csv
 **/*-cpu.pth
 
 *.pyc
+*.DS_Store
 
 **.vscode**
 **lightning_logs**
